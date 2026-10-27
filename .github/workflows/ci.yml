@@ -1,0 +1,30 @@
+name: Application checks
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: box
+          POSTGRES_PASSWORD: box
+          POSTGRES_DB: box_sdlc
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: {python-version: "3.13"}
+      - uses: actions/setup-node@v4
+        with: {node-version: "22", cache: npm, cache-dependency-path: web/package-lock.json}
+      - run: uv sync --frozen
+      - run: uv run python -m box_agent_sdlc.migrate
+      - run: uv run pytest
+      - run: uv run ruff check --select F,I box_agent_sdlc tests
+      - run: npm --prefix web ci
+      - run: npm --prefix web test
+      - run: npm --prefix web run build
+      - run: docker build -f docker/app.Dockerfile -t box-sdlc-ci .
+      - run: docker build -f docker/executor.Dockerfile -t box-sdlc-executor-ci .

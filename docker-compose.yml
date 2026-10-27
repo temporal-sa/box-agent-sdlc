@@ -1,0 +1,110 @@
+x-app: &app
+  build:
+    context: .
+    dockerfile: docker/app.Dockerfile
+  image: box-agent-sdlc:local
+
+x-runner: &runner
+  <<: *app
+  command: [python, -m, box_agent_sdlc.runner]
+  restart: unless-stopped
+  stop_grace_period: 120s
+  depends_on:
+    migrate: {condition: service_completed_successfully}
+    executor: {condition: service_healthy}
+  environment: &runner-env
+    APP_SCOPE: ${APP_SCOPE:-box-agent-sdlc}
+    DATABASE_URL: postgresql://box_app:${POSTGRES_PASSWORD:?Run python deploy/local-env.py first}@db:5432/box_agent_sdlc
+    DEMO_MODE: ${DEMO_MODE:-scripted}
+    AUTH_MODE: development
+    GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:?Run python deploy/local-env.py first}
+    EXECUTOR_URL: http://executor:8082
+    EXECUTOR_TOKEN: ${EXECUTOR_TOKEN:?Run python deploy/local-env.py first}
+    GITHUB_SANDBOX_REPO: ${GITHUB_SANDBOX_REPO:-temporal-sa/box-agent-sdlc-storefront}
+    GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+    GITHUB_COMMAND_ACTORS: ${GITHUB_COMMAND_ACTORS:-}
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+    RUN_BUDGET_USD: ${RUN_BUDGET_USD:-3.00}
+    PUBLIC_URL: http://localhost:8000
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: box_app
+      POSTGRES_DB: box_agent_sdlc
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run python deploy/local-env.py first}
+    ports: ["127.0.0.1:${POSTGRES_PORT:-5432}:5432"]
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U box_app -d box_agent_sdlc"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    <<: *app
+    command: [python, -m, box_agent_sdlc.migrate]
+    depends_on:
+      db: {condition: service_healthy}
+    environment:
+      DATABASE_URL: postgresql://box_app:${POSTGRES_PASSWORD:?Run python deploy/local-env.py first}@db:5432/box_agent_sdlc
+
+  web:
+    <<: *app
+    restart: unless-stopped
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    environment:
+      DATABASE_URL: postgresql://box_app:${POSTGRES_PASSWORD:?Run python deploy/local-env.py first}@db:5432/box_agent_sdlc
+      AUTH_MODE: development
+      APP_SCOPE: ${APP_SCOPE:-box-agent-sdlc}
+      DEMO_MODE: ${DEMO_MODE:-scripted}
+      PUBLIC_URL: http://localhost:8000
+      GITHUB_SANDBOX_REPO: ${GITHUB_SANDBOX_REPO:-temporal-sa/box-agent-sdlc-storefront}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:?Run python deploy/local-env.py first}
+      OPERATOR_TOKEN: ${OPERATOR_TOKEN:?Run python deploy/local-env.py first}
+    ports: ["127.0.0.1:8000:8000"]
+
+  runner-v1:
+    <<: *runner
+    environment:
+      <<: *runner-env
+      PIPELINE_VERSION: v1
+
+  runner-v2:
+    <<: *runner
+    environment:
+      <<: *runner-env
+      PIPELINE_VERSION: v2
+
+  executor:
+    build:
+      context: .
+      dockerfile: docker/executor.Dockerfile
+    image: box-agent-sdlc-executor:local
+    restart: unless-stopped
+    user: "65532:65532"
+    read_only: true
+    mem_limit: 1g
+    pids_limit: 256
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true", "seccomp:unconfined"]
+    tmpfs:
+      - /tmp:size=536870912,mode=1777
+      - /workspaces:size=5368709120,uid=65532,gid=65532,mode=0700
+    environment:
+      EXECUTOR_TOKEN: ${EXECUTOR_TOKEN:?Run python deploy/local-env.py first}
+      EXECUTOR_SANDBOX: bubblewrap
+      EXECUTOR_PORT: "8082"
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8082/readyz', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  postgres-data:

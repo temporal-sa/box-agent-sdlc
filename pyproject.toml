@@ -1,0 +1,24 @@
+[project]
+name = "box-agent-sdlc"
+version = "0.1.0"
+description = "PostgreSQL-backed agentic SDLC comparison application"
+requires-python = ">=3.13,<3.15"
+dependencies = [
+  "fastapi>=0.136,<1", "uvicorn[standard]>=0.47,<1", "pydantic>=2.13,<3",
+  "sqlalchemy[asyncio]>=2.0.45,<3", "psycopg[binary,pool]>=3.2,<4", "alembic>=1.17,<2",
+  "httpx>=0.28,<1", "pydantic-ai-slim[anthropic,google,openai]>=2.53,<3",
+  "anthropic>=1.9,<2", "pyyaml>=6,<7",
+]
+[dependency-groups]
+dev = ["pytest>=8", "pytest-asyncio>=0.26", "ruff>=0.14"]
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+[tool.setuptools.packages.find]
+include = ["box_agent_sdlc*"]
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+[tool.ruff]
+target-version = "py313"
+line-length = 110

@@ -1,0 +1,7 @@
+# Use a pre-existing private state bucket with encryption, versioning, and
+# restricted access. Credentials come from AWS_PROFILE / the normal AWS chain.
+bucket       = "REPLACE-private-terraform-state-bucket"
+key          = "apps/box-agent-sdlc/rds.tfstate"
+region       = "us-west-1"
+encrypt      = true
+use_lockfile = true
