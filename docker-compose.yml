@@ -16,7 +16,8 @@ x-runner: &runner
     APP_SCOPE: ${APP_SCOPE:-box-agent-sdlc}
     DATABASE_URL: postgresql://box_app:${POSTGRES_PASSWORD:?Run python deploy/local-env.py first}@db:5432/box_agent_sdlc
     DEMO_MODE: ${DEMO_MODE:-scripted}
-    AUTH_MODE: development
+    AUTH_MODE: ${AUTH_MODE:-development}
+    OPERATOR_TOKEN: ${OPERATOR_TOKEN:?Run python deploy/local-env.py first}
     GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:?Run python deploy/local-env.py first}
     EXECUTOR_URL: http://executor:8082
     EXECUTOR_TOKEN: ${EXECUTOR_TOKEN:?Run python deploy/local-env.py first}
@@ -26,6 +27,12 @@ x-runner: &runner
     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+    DEFAULT_PLANNER_PROVIDER: ${DEFAULT_PLANNER_PROVIDER:-anthropic}
+    DEFAULT_CODER_PROVIDER: ${DEFAULT_CODER_PROVIDER:-anthropic}
+    DEFAULT_REVIEWER_PROVIDER: ${DEFAULT_REVIEWER_PROVIDER:-openai}
+    DEFAULT_ANTHROPIC_MODEL: ${DEFAULT_ANTHROPIC_MODEL:-claude-sonnet-4-5}
+    DEFAULT_OPENAI_MODEL: ${DEFAULT_OPENAI_MODEL:-gpt-4.1}
+    DEFAULT_GOOGLE_MODEL: ${DEFAULT_GOOGLE_MODEL:-gemini-2.5-pro}
     RUN_BUDGET_USD: ${RUN_BUDGET_USD:-3.00}
     PUBLIC_URL: http://localhost:8000
 
@@ -60,9 +67,15 @@ services:
       migrate: {condition: service_completed_successfully}
     environment:
       DATABASE_URL: postgresql://box_app:${POSTGRES_PASSWORD:?Run python deploy/local-env.py first}@db:5432/box_agent_sdlc
-      AUTH_MODE: development
+      AUTH_MODE: ${AUTH_MODE:-development}
       APP_SCOPE: ${APP_SCOPE:-box-agent-sdlc}
       DEMO_MODE: ${DEMO_MODE:-scripted}
+      DEFAULT_PLANNER_PROVIDER: ${DEFAULT_PLANNER_PROVIDER:-anthropic}
+      DEFAULT_CODER_PROVIDER: ${DEFAULT_CODER_PROVIDER:-anthropic}
+      DEFAULT_REVIEWER_PROVIDER: ${DEFAULT_REVIEWER_PROVIDER:-openai}
+      DEFAULT_ANTHROPIC_MODEL: ${DEFAULT_ANTHROPIC_MODEL:-claude-sonnet-4-5}
+      DEFAULT_OPENAI_MODEL: ${DEFAULT_OPENAI_MODEL:-gpt-4.1}
+      DEFAULT_GOOGLE_MODEL: ${DEFAULT_GOOGLE_MODEL:-gemini-2.5-pro}
       PUBLIC_URL: http://localhost:8000
       GITHUB_SANDBOX_REPO: ${GITHUB_SANDBOX_REPO:-temporal-sa/box-agent-sdlc-storefront}
       GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:?Run python deploy/local-env.py first}

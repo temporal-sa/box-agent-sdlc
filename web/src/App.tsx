@@ -130,6 +130,10 @@ function ScenarioDialog({ config, busy, onClose, onStart }: { config: Config | n
   const [budget, setBudget] = useState(String(config?.budget_usd ?? config?.defaults?.budget_usd ?? 3));
   const [autonomy, setAutonomy] = useState("supervised");
   const [models, setModels] = useState<Record<string, string>>({});
+  const defaultModel = (role: string) => {
+    const choice = config?.defaults?.models?.[role];
+    return choice ? `${choice.provider}:${choice.model}` : "Server default";
+  };
   const modelOptions = Object.entries(config?.models ?? {}).flatMap(([provider, names]) => Array.isArray(names) ? names.map((model) => ({ provider, model })) : []);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === "Escape" && !busy) onClose(); };
@@ -150,7 +154,7 @@ function ScenarioDialog({ config, busy, onClose, onStart }: { config: Config | n
     <label>Scenario title<input autoFocus required maxLength={240} placeholder="Describe the change or review" value={title} onChange={(e) => setTitle(e.target.value)} /></label>
     <label>Details<textarea rows={4} placeholder="Context, expected behavior and acceptance criteria" value={body} onChange={(e) => setBody(e.target.value)} /></label>
     <div className="field-grid"><label>Repository<input placeholder="owner/repository" value={repo} onChange={(e) => setRepo(e.target.value)} /></label><label>Run budget (USD)<input type="number" min="0.01" max="25" step="0.01" required value={budget} onChange={(e) => setBudget(e.target.value)} /></label></div>
-    <details className="model-options"><summary>Optional model overrides</summary><p className="muted">Use a provider and model ID, such as provider:model. Leave blank to use the configured default.</p><div className="field-grid three">{["planner", "coder", "reviewer"].map((role) => <label key={role}>{human(role)} model<input value={models[role] ?? ""} list="model-choices" pattern="(anthropic|openai|google):.+" placeholder="Server default" onChange={(e) => setModels({ ...models, [role]: e.target.value })} /></label>)}</div><datalist id="model-choices">{modelOptions.map((option) => <option value={`${option.provider}:${option.model}`} key={`${option.provider}-${option.model}`} />)}</datalist></details>
+    <details className="model-options"><summary>Model settings</summary><p className="muted">Leave blank to use the shown default. Each run records its chosen models.</p><div className="field-grid three">{["planner", "coder", "reviewer"].map((role) => <label key={role}>{human(role)} model<input value={models[role] ?? ""} list="model-choices" pattern="(anthropic|openai|google):.+" placeholder={defaultModel(role)} onChange={(e) => setModels({ ...models, [role]: e.target.value })} /></label>)}</div><datalist id="model-choices">{modelOptions.map((option) => <option value={`${option.provider}:${option.model}`} key={`${option.provider}-${option.model}`} />)}</datalist></details>
     <div className="modal-actions"><button type="button" className="button secondary" disabled={busy} onClick={onClose}>Cancel</button><button className="button primary" type="submit" disabled={busy || !title.trim()}>{busy ? "Starting…" : "Start run →"}</button></div>
   </form></div>;
 }

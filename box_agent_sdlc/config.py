@@ -39,6 +39,50 @@ class Settings:
     model_reservation_usd: float = field(
         default_factory=lambda: float(os.getenv("MODEL_RESERVATION_USD", "0.25"))
     )
+    default_planner_provider: str = field(
+        default_factory=lambda: os.getenv("DEFAULT_PLANNER_PROVIDER", "anthropic")
+    )
+    default_coder_provider: str = field(
+        default_factory=lambda: os.getenv("DEFAULT_CODER_PROVIDER", "anthropic")
+    )
+    default_reviewer_provider: str = field(
+        default_factory=lambda: os.getenv("DEFAULT_REVIEWER_PROVIDER", "openai")
+    )
+    default_anthropic_model: str = field(
+        default_factory=lambda: os.getenv("DEFAULT_ANTHROPIC_MODEL", "claude-sonnet-4-5")
+    )
+    default_openai_model: str = field(default_factory=lambda: os.getenv("DEFAULT_OPENAI_MODEL", "gpt-4.1"))
+    default_google_model: str = field(
+        default_factory=lambda: os.getenv("DEFAULT_GOOGLE_MODEL", "gemini-2.5-pro")
+    )
+
+    @property
+    def provider_models(self) -> dict[str, str]:
+        return {
+            "anthropic": self.default_anthropic_model,
+            "openai": self.default_openai_model,
+            "google": self.default_google_model,
+        }
+
+    def agent_models(self, overrides: dict | None = None) -> dict:
+        """Resolve every role before saving a run, so deployment changes cannot change its models."""
+        result = {}
+        for role in ("planner", "coder", "reviewer"):
+            choice = (overrides or {}).get(role, {})
+            if isinstance(choice, str):
+                result[role] = choice  # Retain compatibility with previously saved model IDs.
+                continue
+            provider = choice.get("provider", getattr(self, f"default_{role}_provider"))
+            result[role] = {
+                "provider": provider,
+                "model": choice.get("model", self.provider_models[provider]),
+            }
+        return result
+
+    def agent_model(self, role: str, overrides: dict | None = None) -> str:
+        role = "coder" if role == "coder" else "reviewer" if role in {"reviewer", "security"} else "planner"
+        choice = self.agent_models(overrides)[role]
+        return choice if isinstance(choice, str) else choice["provider"] + ":" + choice["model"]
 
     def validate(self) -> None:
         if self.mode not in {"live", "scripted"} or self.version not in {"v1", "v2"}:
@@ -51,6 +95,13 @@ class Settings:
             raise ValueError("Development authentication is restricted to scripted mode")
         if self.mode == "live" and not self.webhook_secret:
             raise ValueError("Live mode requires GITHUB_WEBHOOK_SECRET")
+        if any(
+            getattr(self, f"default_{role}_provider") not in self.provider_models
+            for role in ("planner", "coder", "reviewer")
+        ):
+            raise ValueError("Default agent providers must be anthropic, openai, or google")
+        if any(not model.strip() for model in self.provider_models.values()):
+            raise ValueError("Default model names must not be empty")
         if self.lease_seconds <= self.heartbeat_seconds * 2:
             raise ValueError("Task lease must exceed two heartbeat intervals")
 

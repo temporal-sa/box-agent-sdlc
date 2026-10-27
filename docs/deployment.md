@@ -24,6 +24,14 @@ Generated `.env` credentials have mode `0600` and are never printed. Local
 defaults use `DEMO_MODE=scripted` and development authentication. Scripted
 results must remain marked as such in the console and any comparison evidence.
 
+To run live locally, set `DEMO_MODE=live` and `AUTH_MODE=token` in `.env`, add
+the GitHub and supported model-provider credentials described in the README,
+then run `docker compose up -d --build web runner-v1 runner-v2`. The existing
+`OPERATOR_TOKEN` is passed to the web and runners; the console sends it only
+after the presenter enters it under **Operator access** (the gear icon). It is
+stored for that browser session and is not placed in a URL. Keep `.env` private.
+The executor remains isolated from those credentials.
+
 The executor requires a Linux kernel with working unprivileged user namespaces.
 Its `/readyz` check verifies Bubblewrap containment; the runner waits while that
 check fails. Never disable the sandbox to make generated code run. If Docker

@@ -92,6 +92,60 @@ async def test_invalid_final_schema_is_checkpointed_for_correction():
     assert "Invalid structured result" in json.dumps(result.checkpoint)
 
 
+async def test_final_allowed_request_finishes_with_verified_structured_findings_without_more_tools():
+    class NoShippingMatch(Tools):
+        async def invoke(self, name, args, workspace, op_id):
+            self.calls.append((name, args, workspace, op_id))
+            return []
+
+    model = Model(
+        [response("search_code", {"pattern": "shipping rate"}, f"search-{i}") for i in range(14)]
+        + [response("final_result", {"questions": ["What shipping rate should apply below $75?"]}, "last")]
+    )
+    tools = NoShippingMatch()
+    runtime = AgentRuntime(tools, model_factory=lambda _: model)
+    checkpoint = {}
+    workspace = Workspace("demo/storefront", "branch")
+    for _ in range(14):
+        proposed = await runtime.step("t", "clarifier", {}, checkpoint, workspace, "openai:test")
+        completed = await runtime.step("t", "clarifier", {}, proposed.checkpoint, workspace, "openai:test")
+        checkpoint = json.loads(json.dumps(completed.checkpoint))
+    # A replacement runtime uses the persisted count, so restart cannot reset the allowance.
+    runtime = AgentRuntime(tools, model_factory=lambda _: model)
+    result = await runtime.step("t", "clarifier", {}, checkpoint, workspace, "openai:test")
+    assert result.done
+    assert result.output == {"questions": ["What shipping rate should apply below $75?"]}
+    assert result.checkpoint["request_count"] == len(model.requests) == 15
+    assert len(tools.calls) == 14
+    assert model.requests[-2][1].function_tools
+    assert model.requests[-1][1].function_tools == []
+    assert [tool.name for tool in model.requests[-1][1].output_tools] == ["final_result"]
+    assert not model.requests[-1][1].allow_text_output
+    last_prompt = model.requests[-1][0][-1].parts[0].content
+    assert "verified findings" in last_prompt and "Do not invent" in last_prompt
+
+
+async def test_final_request_keeps_schema_validation_and_does_not_add_paid_allowance():
+    from box_agent_sdlc.agents.runtime import AgentProtocolError
+
+    model = Model([response("final_result", {"summary": "Unverified work; tests flag is missing"})])
+    runtime = AgentRuntime(model_factory=lambda _: model)
+    checkpoint = {
+        "turn_id": "t",
+        "role": "coder",
+        "request_count": 39,
+        "next_action": "model",
+        "messages": [],
+    }
+    result = await runtime.step("t", "coder", {}, checkpoint, None, "openai:test")
+    assert not result.done and result.checkpoint["request_count"] == 40
+    assert "Invalid structured result" in json.dumps(result.checkpoint)
+    assert model.requests[-1][1].function_tools == []
+    with pytest.raises(AgentProtocolError, match="40-request turn limit"):
+        await runtime.step("t", "coder", {}, result.checkpoint, None, "openai:test")
+    assert len(model.requests) == 1
+
+
 async def test_new_turn_reuses_recorded_agent_history():
     model = Model(
         [

@@ -70,7 +70,7 @@ async def create_run(session, settings, request: dict, *, run_id=None):
         }[kind],
         "body": request.get("body", "Implement the requirement with tests and explain the change."),
         "repo": repo,
-        "models": request.get("models", {}),
+        "models": settings.agent_models(request.get("models", {})),
         "autonomy": request.get("autonomy", "supervised"),
         "steps": [{"key": k, "label": label, "status": "pending", "attempt": 0} for k, label in STEPS[kind]],
         "gate": None,

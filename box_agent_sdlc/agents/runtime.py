@@ -409,15 +409,35 @@ class AgentRuntime:
                 raise ValueError("Live agents require an explicit configured model")
             if model_key not in self._models:
                 self._models[model_key] = self.model_factory(model_key)
+            final_request = state["request_count"] == limit - 1
+            if final_request:
+                messages.append(
+                    ModelRequest(
+                        parts=[
+                            UserPromptPart(
+                                "This is the final allowed model request for this turn. No additional "
+                                "repository tools are available. Return final_result now using only "
+                                "verified findings and work already completed. Report remaining "
+                                "uncertainty or incomplete work in the result fields appropriate to "
+                                "your role. Do not invent changes, test runs, results, or approvals. "
+                                "If you have not successfully run the tests, report tests_passed=false "
+                                "when that field is present."
+                            )
+                        ]
+                    )
+                )
             tools = [
                 ToolDefinition(
                     name=name, description=TOOL_SCHEMAS[name][0], parameters_json_schema=TOOL_SCHEMAS[name][1]
                 )
-                for name in sorted(allowed)
+                for name in sorted(allowed if not final_request else ())
             ]
             final = ToolDefinition(
                 name="final_result",
-                description="Return the completed structured result after all work and tests.",
+                description=(
+                    "Return this agent role's structured result as soon as its assigned task is complete. "
+                    "Later workflow stages own the remaining delivery work."
+                ),
                 parameters_json_schema=OUTPUTS[role].model_json_schema(),
                 kind="output",
             )

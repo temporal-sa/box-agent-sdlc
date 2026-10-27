@@ -47,6 +47,10 @@ async def test_http_authentication_and_public_probe_boundaries(client, settings)
     response = await client.get("/api/config", headers=authorized(settings))
     assert response.status_code == 200
     assert response.json()["mode"] == "scripted"
+    assert response.json()["defaults"]["models"] == settings.agent_models()
+    assert response.json()["models"] == {
+        provider: [model] for provider, model in settings.provider_models.items()
+    }
     assert settings.operator_token not in response.text
     assert settings.webhook_secret not in response.text
 

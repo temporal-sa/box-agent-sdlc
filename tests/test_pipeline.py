@@ -99,6 +99,7 @@ async def test_issue_happy_path_across_runner_restarts(pipeline_db):
     run = await view(db, run_id)
     assert run.status == "completed"
     assert run.spent == 0
+    assert run.state["models"] == db.settings.agent_models()
     async with db.session() as s:
         env = await s.get(Environment, db.settings.scope)
         assert env.owner is None

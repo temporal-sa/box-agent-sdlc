@@ -517,27 +517,7 @@ class Pipeline:
                 else AgentRuntime(workspace_manager=self.workspace, github=self.github, effect=ctx.effect)
             )
         role = payload["role"]
-        models = run.state.get("models", {})
-        choice = models.get(
-            "coder" if role == "coder" else "reviewer" if role in {"reviewer", "security"} else "planner", {}
-        )
-        if isinstance(choice, str):
-            model = choice
-        else:
-            provider = choice.get(
-                "provider", "anthropic" if role not in {"reviewer", "security"} else "openai"
-            )
-            model = (
-                provider
-                + ":"
-                + choice.get(
-                    "model",
-                    os.getenv(
-                        "DEFAULT_" + provider.upper() + "_MODEL",
-                        "claude-sonnet-4-5" if provider == "anthropic" else "gpt-4.1",
-                    ),
-                )
-            )
+        model = self.settings.agent_model(role, run.state.get("models", {}))
         checkpoint = payload.get("checkpoint", {})
         workspace = Workspace(
             run.state["repo"], payload.get("branch") or run.state.get("head_branch", "baseline")

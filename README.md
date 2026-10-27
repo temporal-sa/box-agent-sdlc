@@ -33,9 +33,13 @@ The default development database is `postgresql://box:box@localhost:5432/box_sdl
 
 Use `DEMO_MODE=live`. Runners require `GITHUB_TOKEN`, `EXECUTOR_URL`, `EXECUTOR_TOKEN`, a supported provider key, and a narrow GitHub sandbox repository. The web process does not receive the GitHub write token or provider keys. Configure repository webhooks with `GITHUB_WEBHOOK_SECRET`; only committed, signature-verified deliveries are acknowledged.
 
+For local Compose, set `DEMO_MODE=live` and `AUTH_MODE=token` in the private `.env` file alongside the required GitHub/provider credentials, then recreate the application services with `docker compose up -d --build web runner-v1 runner-v2`. Open **Operator access** (the gear icon) in the console and apply the existing `OPERATOR_TOKEN` from `.env` for this browser session. Development authentication is allowed only in scripted mode. The executor receives no GitHub or provider credentials in either mode.
+
 Use a dedicated sandbox seeded from the pinned reference fixture. Label externally opened issues/PRs `agentic-sdlc:<APP_SCOPE>`; issues also require `agent`. Owner labels keep this application and the Temporal reference from responding to the same request. The application never merges into the shared repository's main branch; issue delivery merges only into its own run base branch.
 
 Role model choices accept `{provider, model}` for `planner`, `coder`, and `reviewer`. Providers are Anthropic, OpenAI, and Google. Pin identical choices in matched comparisons. Defaults are compatibility defaults, not a claim that they match the reference's configured models; record explicit overrides before comparison. Known model pricing is required before paid requests; request limits, output caps and transactional reservations limit spend.
+
+Set `DEFAULT_PLANNER_PROVIDER`, `DEFAULT_CODER_PROVIDER`, and `DEFAULT_REVIEWER_PROVIDER` to choose the provider for each role. `DEFAULT_OPENAI_MODEL`, `DEFAULT_ANTHROPIC_MODEL`, and `DEFAULT_GOOGLE_MODEL` select their model IDs. For an OpenAI-only local setup, set all three role providers to `openai`; the existing OpenAI model default is `gpt-4.1`. New runs save the resolved choices, and the console shows them before a run starts.
 
 GitHub commands `/approve`, `/merge`, `/ship`, `/continue`, `/skip`, and `/stop` are accepted only from allowed actors or repository collaborators with write permission. Ordinary comments can revise plans, request fixes, change scope, or steer coder turns. Approval, tests and review are bound to a commit SHA.
 

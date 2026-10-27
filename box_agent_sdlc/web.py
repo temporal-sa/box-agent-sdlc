@@ -137,12 +137,14 @@ def create_app(settings: Settings | None = None, db: Database | None = None):
             "auth_mode": settings.auth_mode,
             "versions": ["v1", "v2"],
             "providers": ["anthropic", "openai", "google"],
+            "models": {provider: [model] for provider, model in settings.provider_models.items()},
             "github_repo": settings.github_repo,
             "max_active_runs": settings.max_runs,
             "defaults": {
                 "budget_usd": settings.default_budget,
                 "review_window_seconds": settings.review_window,
                 "canary_bake_seconds": settings.bake_seconds,
+                "models": settings.agent_models(),
             },
             "release_semantics": "Storefront commit pointers and simulated routing; application deployment is managed by registry",
         }

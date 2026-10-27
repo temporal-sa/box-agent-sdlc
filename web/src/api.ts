@@ -32,7 +32,7 @@ export interface Worker {
 export interface Config {
   repo?: string; models?: Record<string, string[]>; budget_usd?: number; mode?: string;
   execution_mode?: string; version?: string; github_repo?: string;
-  defaults?: { budget_usd?: number }; release_semantics?: string; [key: string]: unknown;
+  defaults?: { budget_usd?: number; models?: Record<string, { provider: string; model: string }> }; release_semantics?: string; [key: string]: unknown;
 }
 export interface Overview { runs: Run[]; workers: Worker[]; version?: string; environments?: Record<string, unknown>; [key: string]: unknown }
 
