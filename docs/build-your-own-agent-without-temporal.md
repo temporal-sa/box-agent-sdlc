@@ -142,7 +142,7 @@ Do not carry over `agentic_sdlc/worker.py`, `temporal_client.py`, `agents/harnes
 
 For the earlier AWS/demo-registry requirement, use ordinary web and runner components plus the registry's isolated executor profile. Keep private RDS provisioning separate, supply secrets only to components that need them, and omit Temporal runtime resource requests. Validate against the registry's current schema when preparing deployment. A working local agent and the storefront's simulated release do not establish that the application is deployed in AWS.
 
-For a concrete replacement implementation, the separate [box-agent-sdlc application](https://github.com/temporal-sa/box-agent-sdlc) contains `box_agent_sdlc/agents/runtime.py`, `integrations/workspaces.py`, `integrations/github.py`, `engine.py`, `state.py` and migrations. Its [verification record](https://github.com/temporal-sa/box-agent-sdlc/blob/main/docs/verification.md) distinguishes tested behavior from pending hosted deployment and comparison work. Use it as an implementation example alongside this map of the original source.
+This repository supplies instructions and an experiment protocol. Box will build and operate the baseline application, adapters, fault hooks and evidence collector described here. It contains no baseline implementation or measured comparison results.
 
 <a id="structured-comparison"></a>
 

@@ -1,12 +1,12 @@
 # Fair durability comparison
 
-Use this protocol to compare the PostgreSQL baseline with the Temporal reference. The purpose is to establish which failure outcomes each implementation handles and what implementation and operating work is required. It does not assume that either design wins, and it does not treat a successful scripted run as evidence of real integration behavior.
+After building the PostgreSQL baseline described in the companion guide, use this protocol to compare it with the Temporal reference. The purpose is to establish which failure outcomes each implementation handles and what implementation and operating work is required. It does not assume that either design wins, and it does not treat a successful scripted run as evidence of real integration behavior.
 
 For a repeatable experiment with explicit MTTD, MTTR and availability definitions, probe rules, paired trials and results tables, use [the structured side-by-side measurement procedure](build-your-own-agent-without-temporal.md#structured-comparison). It distinguishes console reads, durable acceptance and execution availability, and keeps failed or unobserved recoveries visible.
 
 ## Fix the inputs
 
-Record both application commits, the reference revision (`10967999` initially), registry revision (`d56184f` initially), workflow version, execution mode, repository and initial commit, model/provider/version, prompts, autonomy policy, budget, concurrency, adapter versions and fault point. Use separate copies of the same repository state so one implementation’s edits do not become the other’s starting point.
+Record both application commits, the pinned reference revision (`10967999c9a9a43a97d8353b23dfea4aa7810913` in the guide), the registry revision if used for deployment, pipeline version, execution mode, repository and initial commit, model/provider/version, prompts, autonomy policy, budget, concurrency, adapter versions and fault point. Use separate copies of the same repository state so one implementation’s edits do not become the other’s starting point.
 
 Use equivalent functional behavior in both implementations: dependency repair, PR review, and issue-to-release with the same approval policy, parallel coding shape, review policy, staging checks, 20% canary target, 90-second observation interval and compensation decisions where those behaviors are enabled. Record any missing integration as a limitation. Do not substitute a scripted outcome for a missing live adapter.
 
@@ -27,11 +27,11 @@ First run a no-fault control. Then run each fault case in both implementations. 
 | Version rollout | Start v1, deploy v2, then resume v1’s gate | Old-run compatibility, new-run routing, drain/rollback procedure |
 | Budget exhaustion | Exhaust the budget across retry attempts | Durable usage, unknown charges, blocked further spend, visible outcome |
 
-The console’s four fault controls cover its supported application hooks. They are not evidence that every row above has an automated harness. Document manual setup and unsupported cases explicitly.
+Implement the fault hooks needed for the selected cases, and verify each injection took effect. Document manual setup and unsupported cases explicitly; this repository does not supply a fault-injection harness.
 
 ## Record the result
 
-For every trial, retain the input, fault identity and timestamp, last committed checkpoint, recovery checkpoint, attempts, usage/cost source, audit records, relevant GitHub object IDs/SHAs and observed release state. Keep wall-clock recovery delay separate from active execution time. Export the baseline’s selected run from the Evaluation tab and obtain the equivalent workflow history and external-effect evidence for the reference.
+For every trial, retain the input, fault identity and timestamp, last committed checkpoint, recovery checkpoint, attempts, usage/cost source, audit records, relevant GitHub object IDs/SHAs and observed release state. Keep wall-clock recovery delay separate from active execution time. Build an export for the baseline’s persisted run state, checkpoints and events; obtain the equivalent workflow history and external-effect evidence for the reference.
 
 Use these outcome labels consistently:
 
