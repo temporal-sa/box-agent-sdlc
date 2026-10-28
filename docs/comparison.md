@@ -2,6 +2,8 @@
 
 Use this protocol to compare the PostgreSQL baseline with the Temporal reference. The purpose is to establish which failure outcomes each implementation handles and what implementation and operating work is required. It does not assume that either design wins, and it does not treat a successful scripted run as evidence of real integration behavior.
 
+For a repeatable experiment with explicit MTTD, MTTR and availability definitions, probe rules, paired trials and results tables, use [the structured side-by-side measurement procedure](build-your-own-agent-without-temporal.md#structured-comparison). It distinguishes console reads, durable acceptance and execution availability, and keeps failed or unobserved recoveries visible.
+
 ## Fix the inputs
 
 Record both application commits, the reference revision (`10967999` initially), registry revision (`d56184f` initially), workflow version, execution mode, repository and initial commit, model/provider/version, prompts, autonomy policy, budget, concurrency, adapter versions and fault point. Use separate copies of the same repository state so one implementation’s edits do not become the other’s starting point.
